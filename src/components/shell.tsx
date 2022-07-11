@@ -137,19 +137,36 @@ export const Shell: React.FC = () => {
               }
               break;
             default:
-              if (event.ctrlKey && event.key == 'v') {
-                term.writeln(`lets paste!`);
-              } else if (!(event.key in SpecialKeys) && event.key.length == 1) {
-                setBuffer(
-                  Object.assign(buffer, {
-                    cursor: buffer.cursor + 1,
-                    bufferInput: buffer.bufferInput + event.key,
-                    bufferOutput: buffer.bufferOutput + event.key,
-                  }),
-                );
+              if (event.ctrlKey) {
+                // copy to clipboard, hence nothing to do
+                if (event.key == 'c') break;
+                // paste
+                else if (event.key == 'v') {
+                  (async () => {
+                    const text = await navigator.clipboard.readText();
+                    term.write(text);
 
-                term.write(buffer.bufferOutput);
-                setBuffer(Object.assign(buffer, { bufferOutput: '' }));
+                    setBuffer(
+                      Object.assign(buffer, {
+                        cursor: buffer.cursor + text.length,
+                        bufferInput: buffer.bufferInput + text,
+                        bufferOutput: buffer.bufferInput.length + text.length,
+                      }),
+                    );
+                  })();
+                  // ascii char input
+                } else if (!(event.key in SpecialKeys) && event.key.length == 1) {
+                  setBuffer(
+                    Object.assign(buffer, {
+                      cursor: buffer.cursor + 1,
+                      bufferInput: buffer.bufferInput + event.key,
+                      bufferOutput: buffer.bufferOutput + event.key,
+                    }),
+                  );
+
+                  term.write(buffer.bufferOutput);
+                  setBuffer(Object.assign(buffer, { bufferOutput: '' }));
+                }
               }
           }
         }
