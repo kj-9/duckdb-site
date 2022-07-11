@@ -70,17 +70,18 @@ export const Shell: React.FC = () => {
       const bold = new FontFaceObserver(SHELL_FONT_FAMILY, { weight: 'bold' }).load();
 
       await Promise.all([regular, bold]);
+      console.log('loaded fonts');
     })();
 
     // initialize terminal
     term.open(termContainer.current!);
-    fitAddon.fit();
 
     if (hasWebGL()) {
       console.log('enabling webgl rendering...');
       _term.loadAddon(new WebglAddon());
     }
 
+    fitAddon.fit();
     term.writeln('Hello from xterm.js');
     setTerm(term);
 
@@ -155,18 +156,18 @@ export const Shell: React.FC = () => {
                     );
                   })();
                   // ascii char input
-                } else if (!(event.key in SpecialKeys) && event.key.length == 1) {
-                  setBuffer(
-                    Object.assign(buffer, {
-                      cursor: buffer.cursor + 1,
-                      bufferInput: buffer.bufferInput + event.key,
-                      bufferOutput: buffer.bufferOutput + event.key,
-                    }),
-                  );
-
-                  term.write(buffer.bufferOutput);
-                  setBuffer(Object.assign(buffer, { bufferOutput: '' }));
                 }
+              } else if (!(event.key in SpecialKeys) && event.key.length == 1) {
+                setBuffer(
+                  Object.assign(buffer, {
+                    cursor: buffer.cursor + 1,
+                    bufferInput: buffer.bufferInput + event.key,
+                    bufferOutput: buffer.bufferOutput + event.key,
+                  }),
+                );
+
+                term.write(buffer.bufferOutput);
+                setBuffer(Object.assign(buffer, { bufferOutput: '' }));
               }
           }
         }
@@ -177,7 +178,7 @@ export const Shell: React.FC = () => {
 
   return (
     <div className="root">
-      <div ref={termContainer} className="term_container"></div>;
+      <div ref={termContainer} className="term_container"></div>
     </div>
   );
 };
