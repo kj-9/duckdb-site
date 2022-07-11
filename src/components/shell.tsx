@@ -62,7 +62,7 @@ export const Shell: React.FC = () => {
 
   // Initialize terminal
   React.useEffect(() => {
-    console.log('use effect called');
+    console.log('initializing terminal...');
 
     // load fonts
     (async () => {
@@ -71,29 +71,30 @@ export const Shell: React.FC = () => {
 
       await Promise.all([regular, bold]);
       console.log('loaded fonts');
+
+      // initialize terminal
+      console.log('open terminal');
+      term.open(termContainer.current!);
+
+      if (hasWebGL()) {
+        console.log('enabling webgl rendering...');
+        _term.loadAddon(new WebglAddon());
+      }
+
+      fitAddon.fit();
+      term.writeln('Hello from xterm.js');
+      setTerm(term);
+
+      // start db
+      term.writeln('start duckdb...');
+      startConnection().then((conn) => {
+        setConn(conn);
+        setIsLoaded(true);
+        term.writeln('db started.');
+        term.writeln('');
+        term.focus();
+      });
     })();
-
-    // initialize terminal
-    term.open(termContainer.current!);
-
-    if (hasWebGL()) {
-      console.log('enabling webgl rendering...');
-      _term.loadAddon(new WebglAddon());
-    }
-
-    fitAddon.fit();
-    term.writeln('Hello from xterm.js');
-    setTerm(term);
-
-    // start db
-    term.writeln('start duckdb...');
-    startConnection().then((conn) => {
-      setConn(conn);
-      setIsLoaded(true);
-      term.writeln('db started.');
-      term.writeln('');
-      term.focus();
-    });
   }, []);
 
   useEffect(() => {
