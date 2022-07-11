@@ -1,13 +1,29 @@
-import './Shell.css';
+import './shell.css';
 import 'xterm/css/xterm.css';
 
 import * as duckdb from '@duckdb/duckdb-wasm';
 import FontFaceObserver from 'fontfaceobserver';
 import React, { useEffect, useState } from 'react';
 import { ITerminalOptions, Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+import { WebLinksAddon } from 'xterm-addon-web-links';
+import { WebglAddon } from 'xterm-addon-webgl';
 
-import { startConnection } from './duckdb';
-import { SpecialKeys } from './Keys';
+import { startConnection } from '../duckdb';
+import { SpecialKeys } from '../keys';
+
+const hasWebGL = (): boolean => {
+  if (duckdb.isSafari()) {
+    return false;
+  }
+  const canvas = document.createElement('canvas') as any;
+  const supports =
+    'probablySupportsContext' in canvas ? 'probablySupportsContext' : 'supportsContext';
+  if (supports in canvas) {
+    return canvas[supports]('webgl2');
+  }
+  return 'WebGL2RenderingContext' in window;
+};
 
 export const Shell: React.FC = () => {
   // Ref to embed terminal
@@ -32,12 +48,17 @@ export const Shell: React.FC = () => {
     drawBoldTextInBrightColors: true,
     rightClickSelectsWord: true,
     theme: {
-      brightYellow: '#FFF000',
       foreground: '#FFFFFF',
-      background: '#333',
+      background: '#333333',
     },
   };
-  const [term, setTerm] = useState<Terminal>(new Terminal(options));
+
+  const fitAddon = new FitAddon();
+  const _term = new Terminal(options);
+  _term.loadAddon(fitAddon);
+  _term.loadAddon(new WebLinksAddon());
+
+  const [term, setTerm] = useState<Terminal>(_term);
 
   // Initialize terminal
   React.useEffect(() => {
@@ -53,15 +74,24 @@ export const Shell: React.FC = () => {
 
     // initialize terminal
     term.open(termContainer.current!);
-    term.writeln('Hello from \x1B[1;3;31mxterm.js\x1B[0m');
+    fitAddon.fit();
+
+    if (hasWebGL()) {
+      console.log('enabling webgl rendering...');
+      _term.loadAddon(new WebglAddon());
+    }
+
+    term.writeln('Hello from xterm.js');
     setTerm(term);
 
     // start db
-    term.write('start duckdb...');
+    term.writeln('start duckdb...');
     startConnection().then((conn) => {
       setConn(conn);
       setIsLoaded(true);
       term.writeln('db started.');
+      term.writeln('');
+      term.focus();
     });
   }, []);
 
@@ -107,7 +137,9 @@ export const Shell: React.FC = () => {
               }
               break;
             default:
-              if (!(event.key in SpecialKeys) && event.key.length == 1) {
+              if (event.ctrlKey && event.key == 'v') {
+                term.writeln(`lets paste!`);
+              } else if (!(event.key in SpecialKeys) && event.key.length == 1) {
                 setBuffer(
                   Object.assign(buffer, {
                     cursor: buffer.cursor + 1,
@@ -126,5 +158,9 @@ export const Shell: React.FC = () => {
     }
   }, [isLoaded]);
 
-  return <div ref={termContainer} className="term_container"></div>;
+  return (
+    <div className="root">
+      <div ref={termContainer} className="term_container"></div>;
+    </div>
+  );
 };

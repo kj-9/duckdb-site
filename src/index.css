@@ -9,3 +9,24 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+
+:root {
+  --border_radius: 0px;
+  --border_color: rgb(220, 220, 220);
+
+  --nav_bar_bg: rgb(30, 30, 30);
+  --nav_bar_button_height: 48px;
+  --nav_bar_button_margin: 4px 8px;
+  --nav_bar_width: 64px;
+  --nav_logo_height: 56px;
+  --nav_tab_bg: transparent;
+  --nav_tab_bg_active: rgb(20, 20, 20);
+  --nav_tab_fg: rgb(255, 255, 255);
+  --nav_tab_fg_active: rgb(255, 255, 255);
+
+  --card_border_color: rgb(200, 200, 200);
+  --card_header_bg: hsl(210deg 12% 96%);
+  --card_header_border: 1px solid rgb(215, 215, 215);
+
+}
