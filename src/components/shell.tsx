@@ -26,18 +26,6 @@ const hasWebGL = (): boolean => {
 };
 
 export const Shell: React.FC = () => {
-  // Ref to embed terminal
-  const termContainer = React.useRef<HTMLDivElement | null>(null);
-
-  const [buffer, setBuffer] = useState({
-    cursor: 0,
-    bufferInput: '',
-    bufferOutput: '',
-  });
-
-  const [conn, setConn] = useState<duckdb.AsyncDuckDBConnection | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-
   const SHELL_FONT_FAMILY = 'Roboto Mono';
   const options: ITerminalOptions = {
     rows: 100,
@@ -54,52 +42,54 @@ export const Shell: React.FC = () => {
   };
 
   const fitAddon = new FitAddon();
-  const _term = new Terminal(options);
-  _term.loadAddon(fitAddon);
-  _term.loadAddon(new WebLinksAddon());
+  const term = new Terminal(options);
+  term.loadAddon(fitAddon);
+  term.loadAddon(new WebLinksAddon());
 
-  const [term, setTerm] = useState<Terminal>(_term);
+  const [buffer, setBuffer] = useState({
+    cursor: 0,
+    bufferInput: '',
+    bufferOutput: '',
+  });
+
+  // Ref to embed terminal
+  const termContainer = React.useRef<HTMLDivElement | null>(null);
 
   // Initialize terminal
-  React.useEffect(() => {
-    console.log('initializing terminal...');
+  useEffect(() => {
+    console.log('Initializing terminal...');
 
-    // load fonts
     (async () => {
-      const regular = new FontFaceObserver(SHELL_FONT_FAMILY).load();
-      const bold = new FontFaceObserver(SHELL_FONT_FAMILY, { weight: 'bold' }).load();
+      console.log('Loading fonts...');
+      const pFonts = Promise.all([
+        new FontFaceObserver(SHELL_FONT_FAMILY).load(),
+        new FontFaceObserver(SHELL_FONT_FAMILY, { weight: 'bold' }).load(),
+      ]);
 
-      await Promise.all([regular, bold]);
+      console.log('start duckdb...');
+      const pConn = startConnection();
+
+      await pFonts;
       console.log('loaded fonts');
 
       // initialize terminal
-      console.log('open terminal');
+      console.log('open terminal...');
       term.open(termContainer.current!);
 
       if (hasWebGL()) {
         console.log('enabling webgl rendering...');
-        _term.loadAddon(new WebglAddon());
+        term.loadAddon(new WebglAddon());
       }
 
       fitAddon.fit();
       term.writeln('Hello from xterm.js');
-      setTerm(term);
 
-      // start db
-      term.writeln('start duckdb...');
-      startConnection().then((conn) => {
-        setConn(conn);
-        setIsLoaded(true);
-        term.writeln('db started.');
-        term.writeln('');
-        term.focus();
-      });
-    })();
-  }, []);
+      const conn = await pConn;
+      term.writeln('db started.');
+      term.writeln('');
+      term.focus();
 
-  useEffect(() => {
-    if (isLoaded) {
-      console.log('set handler');
+      console.log('set handler...');
       term.attachCustomKeyEventHandler((event) => {
         if (event.type === 'keydown') {
           switch (event.key) {
@@ -174,8 +164,8 @@ export const Shell: React.FC = () => {
         }
         return false;
       });
-    }
-  }, [isLoaded]);
+    })();
+  }, []);
 
   return (
     <div className="root">
